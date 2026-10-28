@@ -1,0 +1,44 @@
+name: Build and Run App
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Stage: Checkout
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # Stage: Create Docker Network
+    - name: Create Docker Network
+      run: docker network create app-net || true
+
+    # Stage: Build & Run Backend
+    - name: Build & Run Backend
+      run: |
+        cd backend
+        docker stop backend-container || true
+        docker rm backend-container || true
+        docker build -t backend-app:latest .
+        docker run -d --name backend-container \
+          --network app-net \
+          -p 8080:8080 \
+          backend-app:latest
+
+    # Stage: Build & Run Frontend
+    - name: Build & Run Frontend
+      run: |
+        cd frontend
+        docker stop frontend-container || true
+        docker rm frontend-container || true
+        docker build -t frontend-app:latest .
+        docker run -d --name frontend-container \
+          --network app-net \
+          -p 3000:80 \
+          frontend-app:latest
